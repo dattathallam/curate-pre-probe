@@ -2,10 +2,14 @@ name: curate-pre-probe
 description: Probe - reads the runner's _diag in `pre` (before any other action's pre) and hands the snapshot to `main`, which only decides.
 author: dattathallam
 inputs:
-  fail-in-pre:
+  failinpre:
     description: probe only - exit non-zero from pre after saving the snapshot
     default: 'false'
+  padkb:
+    description: probe only - extra KB of filler saved in step state, to find the size limit
+    default: '0'
 runs:
   using: node20
   pre: pre.js
   main: main.js
+  post: post.js
