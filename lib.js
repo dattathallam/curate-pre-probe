@@ -28,4 +28,28 @@ function snapshot(diag) {
   for (const w of workers) out.forgedInWorker += (fs.readFileSync(path.join(diag, w), 'latin1').match(/Check if action archive 'attackerpre\/evil@/g) || []).length;
   return out;
 }
-module.exports = { findDiag, snapshot };
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+function workerShas(diag) {
+  const re = /^\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}Z [A-Z ]+ ActionManager\] Check if action archive '([^'@]+\/[^'@]+)@([0-9a-f]{40})'/gm;
+  const out = new Set();
+  for (const f of fs.readdirSync(diag).filter((x) => /^Worker_.*\.log$/.test(x))) {
+    let m; const t = fs.readFileSync(path.join(diag, f), 'latin1');
+    while ((m = re.exec(t))) out.add(m[1] + '@' + m[2]);
+  }
+  return [...out];
+}
+// Polls until every action the Worker log fetched has a setup line in pages (or the deadline passes).
+async function snapshotWhenReady(diag, deadlineMs) {
+  const t0 = Date.now(); let attempts = 0; let s;
+  for (;;) {
+    attempts++;
+    s = snapshot(diag);
+    const w = workerShas(diag);
+    const pageShas = new Set(s.actions.map((a) => a.split(' ')[1]));
+    const missing = w.filter((x) => !pageShas.has(x.split('@')[1]));
+    s.worker = w; s.missing = missing; s.attempts = attempts; s.waitedMs = Date.now() - t0;
+    if (missing.length === 0 || Date.now() - t0 > deadlineMs) return s;
+    await sleep(100);
+  }
+}
+module.exports = { findDiag, snapshot, snapshotWhenReady };
