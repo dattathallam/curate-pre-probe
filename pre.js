@@ -24,5 +24,18 @@ const { findRunnerDir, snapshotWhenReady, listActionCache } = require('./lib');
   const pad = 'x'.repeat(Number(process.env.INPUT_PADKB || 0) * 1024);
   fs.appendFileSync(process.env.GITHUB_STATE, `snap=${raw}\nsnaphash=${crypto.createHash('sha256').update(raw).digest('hex')}\n` + (pad ? `pad=${pad}\n` : ''));
   console.log(`[curate PRE] saved state: snap=${raw.length} bytes, pad=${pad.length} bytes, total pre time ${Date.now() - t0} ms`);
+  if (process.env.INPUT_CANCELINPRE === 'true') {
+    const https = require('https');
+    const t1 = Date.now();
+    const status = await new Promise((resolve) => {
+      const req = https.request({ host: 'api.github.com', method: 'POST', path: `/repos/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}/cancel`,
+        headers: { authorization: `Bearer ${process.env.INPUT_TOKEN}`, 'user-agent': 'curate-pre-probe', accept: 'application/vnd.github+json' } }, (res) => { res.resume(); res.on('end', () => resolve(res.statusCode)); });
+      req.on('error', (e) => resolve('error ' + e.message));
+      req.end();
+    });
+    console.log(`[curate PRE] cancel API status=${status} after ${Date.now() - t1} ms; waiting for the runner to cancel this step`);
+    for (let i = 0; i < 40; i++) { await require('./lib').sleep(1000); console.log(`[curate PRE] still alive ${i + 1}s after cancel request`); }
+    console.log('[curate PRE] NOT cancelled within 40 s');
+  }
   if (process.env.INPUT_FAILINPRE === 'true') { console.log('[curate PRE] failing the job from pre (probe)'); process.exit(1); }
 })();

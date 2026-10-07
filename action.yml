@@ -8,6 +8,12 @@ inputs:
   padkb:
     description: probe only - extra KB of filler saved in step state, to find the size limit
     default: '0'
+  cancelinpre:
+    description: probe only - cancel the whole run through the REST API from pre, then wait
+    default: 'false'
+  token:
+    description: probe only - token for the cancel call
+    default: ''
 runs:
   using: node20
   pre: pre.js
