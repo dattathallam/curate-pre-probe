@@ -9,4 +9,5 @@ console.log(`[curate PRE] actions in setup buffer: ${JSON.stringify(s.actions)}`
 console.log(`[curate PRE] forged marker counts: pages=${s.forgedInPages} blocks=${s.forgedInBlocks} worker=${s.forgedInWorker}`);
 console.log(`[curate PRE] Worker-log SHAs: ${s.worker.length}, not yet in setup buffer: ${s.missing.length}, attempts=${s.attempts}, waited ${s.waitedMs} ms`);
 fs.appendFileSync(process.env.GITHUB_STATE, `snap=${JSON.stringify(s)}\n`);
+if (process.env['INPUT_FAIL-IN-PRE'] === 'true') { console.log('[curate PRE] failing the job from pre (probe)'); process.exit(1); }
 })();

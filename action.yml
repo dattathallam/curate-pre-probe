@@ -1,6 +1,10 @@
 name: curate-pre-probe
 description: Probe - reads the runner's _diag in `pre` (before any other action's pre) and hands the snapshot to `main`, which only decides.
 author: dattathallam
+inputs:
+  fail-in-pre:
+    description: probe only - exit non-zero from pre after saving the snapshot
+    default: 'false'
 runs:
   using: node20
   pre: pre.js
