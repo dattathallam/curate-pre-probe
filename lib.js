@@ -36,7 +36,7 @@ function findRunnerDir() {
     if (!info) break;
     chain.push(`${pid}:${path.basename(info.exe.split(' ')[0] || '?')}`);
     const m = info.exe.match(/^(.*?)[\\/]Runner\.Worker/i);
-    if (m) return { runnerDir: path.dirname(m[1]), chain };
+    if (m) return { runnerDir: path.dirname(m[1]), chain, workerPid: pid };
     pid = info.ppid;
   }
   return { runnerDir: null, chain };

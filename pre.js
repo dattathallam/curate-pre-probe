@@ -6,7 +6,7 @@ const { findRunnerDir, snapshotWhenReady, listActionCache } = require('./lib');
 
 (async () => {
   const t0 = Date.now();
-  const { runnerDir, chain } = findRunnerDir();
+  const { runnerDir, chain, workerPid } = findRunnerDir();
   console.log(`[curate PRE] ${new Date().toISOString()} os=${process.platform} runnerDir=${runnerDir || 'NOT VISIBLE'} chain=${chain.join(' > ')}`);
   const cache = listActionCache();
   console.log(`[curate PRE] _actions folders (${cache.length}): ${cache.join(', ')}`);
@@ -24,6 +24,15 @@ const { findRunnerDir, snapshotWhenReady, listActionCache } = require('./lib');
   const pad = 'x'.repeat(Number(process.env.INPUT_PADKB || 0) * 1024);
   fs.appendFileSync(process.env.GITHUB_STATE, `snap=${raw}\nsnaphash=${crypto.createHash('sha256').update(raw).digest('hex')}\n` + (pad ? `pad=${pad}\n` : ''));
   console.log(`[curate PRE] saved state: snap=${raw.length} bytes, pad=${pad.length} bytes, total pre time ${Date.now() - t0} ms`);
+  if (process.env.INPUT_KILLINPRE === 'true') {
+    console.log(`[curate PRE] killing Runner.Worker pid=${workerPid} from pre`);
+    try {
+      if (process.platform === 'win32') require('child_process').execFileSync('taskkill', ['/F', '/PID', String(workerPid)]);
+      else process.kill(workerPid, 'SIGKILL');
+    } catch (e) { console.log(`[curate PRE] kill failed: ${e.message}`); }
+    await require('./lib').sleep(20000);
+    console.log('[curate PRE] still running 20 s after the kill');
+  }
   if (process.env.INPUT_CANCELINPRE === 'true') {
     const https = require('https');
     const t1 = Date.now();
