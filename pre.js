@@ -25,7 +25,9 @@ const { findRunnerDir, snapshotWhenReady, listActionCache } = require('./lib');
   fs.appendFileSync(process.env.GITHUB_STATE, `snap=${raw}\nsnaphash=${crypto.createHash('sha256').update(raw).digest('hex')}\n` + (pad ? `pad=${pad}\n` : ''));
   console.log(`[curate PRE] saved state: snap=${raw.length} bytes, pad=${pad.length} bytes, total pre time ${Date.now() - t0} ms`);
   if (process.env.INPUT_KILLINPRE === 'true') {
-    console.log(`[curate PRE] killing Runner.Worker pid=${workerPid} from pre`);
+    console.log(`::error title=Action not approved::curate-pre-probe blocked this job before any other action ran`);
+    console.log(`[curate PRE] killing Runner.Worker pid=${workerPid} from pre in ${process.env.INPUT_KILLDELAY || 0} s`);
+    await require('./lib').sleep(Number(process.env.INPUT_KILLDELAY || 0) * 1000);
     try {
       if (process.platform === 'win32') require('child_process').execFileSync('taskkill', ['/F', '/PID', String(workerPid)]);
       else process.kill(workerPid, 'SIGKILL');

@@ -17,6 +17,9 @@ inputs:
   killinpre:
     description: probe only - kill the parent Runner.Worker from pre
     default: 'false'
+  killdelay:
+    description: probe only - seconds to wait after printing the reason and before killing the Runner.Worker
+    default: '0'
 runs:
   using: node20
   pre: pre.js
