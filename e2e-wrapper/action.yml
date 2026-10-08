@@ -1,0 +1,23 @@
+name: e2e-wrapper
+description: E2E test wrapper that downloads a built jf and runs curate-gh-actions --from-pre / --from-post.
+inputs:
+  url:
+    description: JFrog platform URL.
+    required: true
+  token:
+    description: JFrog access token.
+    required: true
+  vcs-repo:
+    description: Artifactory GitHub VCS remote repository key.
+    required: true
+  jf-release:
+    description: Release tag in the workflow's repository that holds the jf-* assets.
+    required: true
+  github-token:
+    description: Token used to download the release asset (contents read).
+    required: true
+runs:
+  using: node20
+  pre: pre.js
+  main: main.js
+  post: post.js
