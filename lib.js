@@ -110,6 +110,23 @@ function jobMessageSteps(text) {
   } catch (e) { return { error: 'parse: ' + e.message }; }
 }
 
+// The whole parsed job message (raw), or {error}.
+function jobMessageObject(text) {
+  const at = text.indexOf('Worker] Job message:');
+  if (at < 0) return { error: 'marker not found' };
+  const start = text.indexOf('{', at);
+  let depth = 0, inStr = false, esc = false, end = -1;
+  for (let i = start; i >= 0 && i < text.length; i++) {
+    const c = text[i];
+    if (inStr) { if (esc) esc = false; else if (c === '\\') esc = true; else if (c === '"') inStr = false; continue; }
+    if (c === '"') inStr = true;
+    else if (c === '{') depth++;
+    else if (c === '}') { depth--; if (depth === 0) { end = i; break; } }
+  }
+  if (end < 0) return { error: 'unterminated json' };
+  try { return { obj: JSON.parse(text.slice(start, end + 1)) }; } catch (e) { return { error: 'parse: ' + e.message }; }
+}
+
 // owner/repo@ref folders under _actions, which a container job can still see.
 function listActionCache() {
   const base = path.join(process.env.RUNNER_TEMP || '', '..', '_actions');
@@ -165,4 +182,4 @@ async function snapshotWhenReady(diag, deadlineMs) {
   }
 }
 
-module.exports = { findRunnerDir, snapshot, snapshotWhenReady, listActionCache, parseWorker, workerLogs, readAll, sleep };
+module.exports = { jobMessageObject, findRunnerDir, snapshot, snapshotWhenReady, listActionCache, parseWorker, workerLogs, readAll, sleep };

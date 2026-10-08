@@ -2,12 +2,41 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { findRunnerDir, snapshotWhenReady, listActionCache } = require('./lib');
+const { findRunnerDir, snapshotWhenReady, listActionCache, jobMessageObject, workerLogs } = require('./lib');
 
 (async () => {
   const t0 = Date.now();
   const { runnerDir, chain, workerPid } = findRunnerDir();
   console.log(`[curate PRE] ${new Date().toISOString()} os=${process.platform} runnerDir=${runnerDir || 'NOT VISIBLE'} chain=${chain.join(' > ')}`);
+  for (const k of ['GITHUB_ACTION_REPOSITORY', 'RUNNER_ENVIRONMENT', 'RUNNER_WORKSPACE', 'RUNNER_TEMP', 'GITHUB_ACTION_PATH']) console.log(`[curate PRE] env ${k}=${JSON.stringify(process.env[k] === undefined ? '<unset>' : process.env[k])}`);
+  if (runnerDir) {
+    let worker = '';
+    for (const w of workerLogs(path.join(runnerDir, '_diag'))) { try { worker += fs.readFileSync(w, 'latin1') + '\n'; } catch (e) { /* locked */ } }
+    const jm = jobMessageObject(worker);
+    if (jm.error) console.log(`[curate PRE] jobmsg ERROR ${jm.error}`);
+    else {
+      const o = jm.obj;
+      const g = (k) => (o[k] === undefined ? '<absent>' : JSON.stringify(o[k]));
+      console.log(`[curate PRE] jobmsg keys=${JSON.stringify(Object.keys(o))}`);
+      console.log(`[curate PRE] jobmsg jobContainer=${g('jobContainer')}`);
+      console.log(`[curate PRE] jobmsg jobServiceContainers=${g('jobServiceContainers')}`);
+      console.log(`[curate PRE] jobmsg timeline=${g('timeline')}`);
+      (o.steps || []).forEach((s, i) => {
+        const a = (k) => (s[k] === undefined ? '<absent>' : JSON.stringify(s[k]));
+        console.log(`[curate PRE] jobmsg step[${i}] reference=${a('reference')} condition=${a('condition')} continueOnError=${a('continueOnError')} name=${a('name')} contextName=${a('contextName')}`);
+      });
+    }
+    // Q2: every Worker-log line carrying the forged text, with a column-0 marker.
+    const lines = worker.split(/\r?\n/);
+    const anch = /^\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}Z [A-Z ]+ ActionManager\] /;
+    let n = 0;
+    lines.forEach((l, i) => {
+      if (!/forged\/forged|forgedimage/.test(l)) return;
+      n++;
+      console.log(`[curate PRE] forgedline #${n} line=${i + 1} startsWithBracket=${l.startsWith('[')} anchoredMatch=${anch.test(l)} text=${JSON.stringify(l.slice(0, 300))}`);
+    });
+    console.log(`[curate PRE] forgedline total=${n}`);
+  }
   const cache = listActionCache();
   console.log(`[curate PRE] _actions folders (${cache.length}): ${cache.join(', ')}`);
   const snap = { visible: !!runnerDir, cache };
