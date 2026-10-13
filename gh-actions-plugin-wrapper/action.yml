@@ -1,0 +1,29 @@
+name: curate-wrapper
+description: E2E wrapper. Its pre installs jf and the gh-actions plugin, configures the server and runs jf gh-actions curate --from-pre; its post runs --from-post. Place it as the job's first step.
+inputs:
+  url:
+    description: JFrog Platform URL.
+    required: true
+  token:
+    description: JFrog access token.
+    required: true
+  tag:
+    description: Release tag of the workflow's repository holding the gh-actions-* assets and SHA256SUMS.
+    required: true
+  github-token:
+    description: Token that can read the workflow repository's releases.
+    required: true
+  summary:
+    description: true to set JFROG_CLI_COMMAND_SUMMARY_OUTPUT_DIR (job summaries on), false to leave it unset.
+    default: 'true'
+  jf-version:
+    description: JFrog CLI version to download from releases.jfrog.io.
+    default: '[RELEASE]'
+  vcs-repo:
+    description: Overrides the Artifactory VCS repository (JFROG_CLI_CURATION_GH_ACTIONS_VCS_REPO). Empty derives <owner>-github-remote-stand-in.
+    default: ''
+runs:
+  using: node20
+  pre: pre.js
+  main: main.js
+  post: post.js
