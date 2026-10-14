@@ -1,0 +1,25 @@
+name: pre-observer
+description: Probe - reports from its pre what ran before it in the job, and which runner facts a pre can rely on. Prints the presence of secret values, never the values.
+inputs:
+  plain:
+    description: a literal value, printed as is
+    default: ''
+  secret:
+    description: a secret value, printed only as set/empty
+    default: ''
+  fromstep:
+    description: an expression on an earlier step's output, printed as is
+    default: ''
+  idtoken:
+    description: true to request an OIDC ID token from the pre
+    default: 'false'
+outputs:
+  from_pre:
+    description: written to GITHUB_OUTPUT by the pre
+  from_main:
+    description: written to GITHUB_OUTPUT by main
+runs:
+  using: node20
+  pre: pre.js
+  main: main.js
+  post: post.js
